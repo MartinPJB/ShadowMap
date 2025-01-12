@@ -1,0 +1,11 @@
+{
+    "type": "module",
+    "dependencies": {
+        "luaparse": "^0.3.1"
+    },
+    "devDependencies": {
+        "@types/luaparse": "^0.2.12",
+        "@types/node": "^22.10.5",
+        "typescript": "^5.7.3"
+    }
+}

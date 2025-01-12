@@ -1,0 +1,6 @@
+# Ignore
+OLD__IGNORE__BAD.js
+node_modules
+Build
+map.json
+package-lock.json
