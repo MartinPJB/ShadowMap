@@ -75,6 +75,7 @@ return v0
 - Comment the code
 - Go through extensive testing to ensure the anonymization process is working correctly
 - Support for multiple files and insure the integrity of the code is maintained. (Basically, methods defined in another script should be renamed in other files using those)
+- Basic string encryptions as well, nothing too crazy but just to make strings less readable
 
 ### Contributing
 
