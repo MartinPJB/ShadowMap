@@ -69,7 +69,7 @@ return v0
 
 ### Planned
 
-- Detect and avoid anonymizing built-in functions and variables from Roblox.
+- Detect and avoid anonymizing built-in functions and variables from Roblox. -> Will use the type of the variable to determine if it's a built-in or not. So make sure to explicitely declare the type of the variable if it's not a built-in. For example: `local players = game:GetService("Players")` should be `local players: Players = game:GetService("Players")`
 - Possibly switch to typescript
 - Avoid having a single huge file for all the classes
 - Comment the code
