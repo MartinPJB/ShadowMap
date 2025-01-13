@@ -94,7 +94,15 @@ class NodesProcessor {
         this.variableCounter = 0
     }
 
-    generateVariableName = () => `v${this.variableCounter++}`
+    generateVariableName = () => {
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const allChars = chars + "0123456789";
+        let result = chars[Math.floor(Math.random() * chars.length)];
+        for (let i = 0; i < 21; i++) {
+            result += allChars[Math.floor(Math.random() * allChars.length)];
+        }
+        return result;
+    }
 
     LocalStatement(Node) {
         const Variables = Node.variables;
