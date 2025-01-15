@@ -1,7 +1,7 @@
 local test = {
     Property = "Test Property",
 }
-test.__index = test;
+test.__index = test
 
 local function TestFunction(name)
     return "Hello, World! " .. name
