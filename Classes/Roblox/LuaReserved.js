@@ -22,6 +22,8 @@ export default new Set([
     "true",
     "until",
     "while",
+    "continue",
+    "self",
 
     // Default functions
     "assert",
