@@ -108,7 +108,7 @@ return In1tmqFa3Fdwm4SNLka9vq
 
 ### Planned
 
-- Detect and avoid anonymizing built-in functions and variables from Roblox. -> Will use the type of the variable to determine if it's a built-in or not. So make sure to explicitely declare the type of the variable if it's not a built-in. For example: `local players = game:GetService("Players")` should be `local players: Players = game:GetService("Players")`
+- Actively check for properties and methods directly from roblox's API dumps as type annotation support has been added to the parser. Also in case of unannotated codebase, print out in the console doubts about the code's obfuscation and display something like `The property '.PropertyName' is also used in the Roblox API. In case of doubt, it has not been anonymized.`, same with methods.
 - Possibly switch to typescript
 - Comment the code
 - Go through extensive testing to ensure the anonymization process is working correctly
