@@ -236,6 +236,7 @@
     // The default AST structure is inspired by the Mozilla Parser API but can
     // easily be customized by overriding these functions.
 
+    const existingIdentifiersTypes = new Map();
     var ast = exports.ast = {
         typeAnnotation: function (type) {
             return {
@@ -390,10 +391,17 @@
         }
 
         , identifier: function (name) {
+            const hasIdentifierTypeBeenDefinedBefore = existingIdentifiersTypes.has(name);
+            let typeAnnotation = "any";
+
+            if (hasIdentifierTypeBeenDefinedBefore) {
+                typeAnnotation = existingIdentifiersTypes.get(name);
+            }
+
             return {
                 type: 'Identifier'
                 , name: name
-                , typeAnnotation: "any"
+                , typeAnnotation: typeAnnotation
             };
         }
 
@@ -2157,6 +2165,8 @@
                 if (consume(':')) {
                     var typeAnnotation = parseTypeAnnotation();
                     name.typeAnnotation = typeAnnotation;
+
+                    existingIdentifiersTypes.set(name.name, typeAnnotation);
                 } else {
                     name.typeAnnotation = "unknown"; // No type annotation for this variable.
                 }
