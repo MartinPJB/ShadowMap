@@ -9,7 +9,11 @@ It was written in a few hours and is a very basic implementation. It's not even 
 
 ### Known issues
 
-Some variables may not be renamed correctly, and the anonymizer still doesn't recognizes roblox's API properties and methods. If you want to keep your codebase's integrity safe, do not use this tool yet.
+- Some types from Roblox's API are not handled correctly. This is because the new Roblox API Dump class fetches Classes and Enums. However it doesn't fetch the [Data Types](https://create.roblox.com/docs/reference/engine/datatypes) as it is not in the json dumped by their API. This means that some types will still be anonymized.
+- Enums implementation is yet to come. For now, there's only Class checks for Member Expressions. This means that Enums will still be anonymized.
+- Optimization problems: I know as for now the code isn't as optimized as I'd want it to be.
+- As explained later in the readme, not all type checking is done. See ["Planned"](#planned) for more information.
+- For all the JavaScript haters, yeah I used JS and not another language for that. Yeah I could've used something like C++ or Rust to do that but I couldn't be asked. So no need to come to me asking me "Why is this JS boohoo fuck JS". I needed this to be done fast and this is the language I know the most. Although I hear you, I might re-do the whole thing in another language when I'll both have time for that and motivation. For now, it's in JS, and cry about it.
 
 ### Examples
 
@@ -55,6 +59,8 @@ end
 local PlayerName = "Roblox"
 local stuff = 1 + ((1 * 2) / 2)
 
+stuff = 25
+
 TestFunction(PlayerName)
 AnotherTestFunction(2, 2)
 
@@ -63,47 +69,50 @@ return test
 
 After anonymizing it:
 ```lua
-local In1tmqFa3Fdwm4SNLka9vq = { LxloHX8HEfQo8MW2vJeAjo = "Test Property" }
-In1tmqFa3Fdwm4SNLka9vq.__index = In1tmqFa3Fdwm4SNLka9vq
+local LLEpgoTWBzkOGAU8eJMPx7 = { n3r04DIwl5l7QInE0hokZ7 = "Test Property" }
+LLEpgoTWBzkOGAU8eJMPx7.__index = LLEpgoTWBzkOGAU8eJMPx7
 
-local function BiYB4rlLbE93m1cEZOp9tT(LR8FmZu3MeC4AvCgOjblbX)
-    return ("Hello, World! " .. LR8FmZu3MeC4AvCgOjblbX)
+local function gEncqo0sSO43IeuvUGIxUu(uRTSL6CZuxQ2kTnf15udy9)
+    return ("Hello, World! " .. uRTSL6CZuxQ2kTnf15udy9)
 end
 
-local function CkE9IUZ7OUYmljmvg8ksRy(QOrIFyoJwcB956RI0kaVqV, qwJyj47DFQNei9U7MHVgTY)
-    print((QOrIFyoJwcB956RI0kaVqV + qwJyj47DFQNei9U7MHVgTY))
+local function VmIdFfxkWxvHahbHkrVAds(rvCvtpIOHVgIfv88hY7sTD, qA8wFVkkggApqjSDaeiyz6)
+    print((rvCvtpIOHVgIfv88hY7sTD + qA8wFVkkggApqjSDaeiyz6))
 end
 
-function In1tmqFa3Fdwm4SNLka9vq:Od3J9zHcQLJ2rblrmWQxdG()
-    local D6Vd4oNktdCIEGqWcsqZlV = DzXuIhNxH4SzYR51TalrWJ:BSgZrDaUMD1dU07gYb5K3S("Players") -- You can see game:GetService gets obfuscated -> Unwanted result.
-    local cVXwVN9nPv1quJnBC3hW4H = D6Vd4oNktdCIEGqWcsqZlV.NFC5ydqgNkdYkElzhP71YU -- You can see LocalPlayer gets obfuscated -> Unwanted result.
-    if cVXwVN9nPv1quJnBC3hW4H then
-        local y9wJkUdVnss7HXo0tsQM4E = cVXwVN9nPv1quJnBC3hW4H.y9wJkUdVnss7HXo0tsQM4E -- You can see Character gets obfuscated -> Unwanted result.
-        print(cVXwVN9nPv1quJnBC3hW4H, y9wJkUdVnss7HXo0tsQM4E)
+function LLEpgoTWBzkOGAU8eJMPx7:ykv6SNbzxgUtLR2XoLNyXT()
+    local d7xEpYGlYQugLKbfhfo310 = game:GetService("Players")
+    local XrrLOtHABY289cZHS5wHHj = d7xEpYGlYQugLKbfhfo310.LocalPlayer
+
+    if XrrLOtHABY289cZHS5wHHj then
+        local UiYenYZ7gHZ4oSOdk81pD5 = XrrLOtHABY289cZHS5wHHj.Character
+        print(XrrLOtHABY289cZHS5wHHj, UiYenYZ7gHZ4oSOdk81pD5)
     end
 
-    for GMtREuFvcQOtcLOwWFCcEI, vdkl8DOGnJA788qs1JMsp8 in pairs(self) do
-        if (GMtREuFvcQOtcLOwWFCcEI == "Property") then
-            local RpyRHvXq3EbXKxVOgmBuue = GMtREuFvcQOtcLOwWFCcEI
-            print(GMtREuFvcQOtcLOwWFCcEI, RpyRHvXq3EbXKxVOgmBuue)
+    for m3SGG5qzKmKIQsC18nElet, n8eCMyUypOsq8h0gUYTtzv in pairs(self) do
+        if (m3SGG5qzKmKIQsC18nElet == "Property") then
+            local QXkOlB5Ha3coDGK9lx40K7 = m3SGG5qzKmKIQsC18nElet
+            print(m3SGG5qzKmKIQsC18nElet, QXkOlB5Ha3coDGK9lx40K7)
             continue
         end
     end
 
-    for GMtREuFvcQOtcLOwWFCcEI = 1, 10, 1 do
-        if (GMtREuFvcQOtcLOwWFCcEI == 5) then
+    for m3SGG5qzKmKIQsC18nElet = 1, 10, 1 do
+        if (m3SGG5qzKmKIQsC18nElet == 5) then
             break
         end
     end
 end
 
-local ZaunbMH1WrcApEG9QWDjbW = "Roblox"
-local tBKZjSpoBURifG0dAgJTD8 = (1 + ((1 * 2) / 2))
+local uxGunt7eWpMduJ3SdYDzxz = "Roblox"
+local RVzBOaFlDPJZnOxRcNcBCj = (1 + ((1 * 2) / 2))
 
-BiYB4rlLbE93m1cEZOp9tT(ZaunbMH1WrcApEG9QWDjbW)
-CkE9IUZ7OUYmljmvg8ksRy(2, 2)
+RVzBOaFlDPJZnOxRcNcBCj = 25
 
-return In1tmqFa3Fdwm4SNLka9vq
+gEncqo0sSO43IeuvUGIxUu(uxGunt7eWpMduJ3SdYDzxz)
+VmIdFfxkWxvHahbHkrVAds(2, 2)
+
+return LLEpgoTWBzkOGAU8eJMPx7
 ```
 
 ### Planned
