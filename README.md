@@ -109,11 +109,43 @@ return In1tmqFa3Fdwm4SNLka9vq
 ### Planned
 
 - Actively check for properties and methods directly from roblox's API dumps as type annotation support has been added to the parser. Also in case of unannotated codebase, print out in the console doubts about the code's obfuscation and display something like `The property '.PropertyName' is also used in the Roblox API. In case of doubt, it has not been anonymized.`, same with methods.
-- Possibly switch to typescript
-- Comment the code
-- Go through extensive testing to ensure the anonymization process is working correctly
+- Basic type annotation support has been added but still needs to be expanded as it doesn't support these for now:
+```lua
+-- Lacks support for Table types
+type MyType = {
+    MyProperty: string,
+    MyMethod: function(self: MyType, arg1: string, arg2: string): string,
+}
+
+local MyTable: MyType = {
+    MyProperty = "Hello, World!",
+    MyMethod = function(self, arg1, arg2)
+        return arg1 .. arg2
+    end
+}
+
+-- Lacks support for Generics (Generics types and functions)
+type Pairs<T> = { first: T, second: T }
+
+local strings: Pair<string> = { first = "Hello", second = "World" }
+local numbers: Pair<number> = { first = 1, second = 2 }
+
+local function genericFunction<T>(arg: T): T
+    return arg
+end
+
+-- Even though I added support for union types and nullable types, it still lacks support for intersection, singleton and variadic types
+-- I'd also like to add support for type variations (e.g.: type F (...number) -> ...string)
+-- And type packs (e.g.: type Signal<T, U...> = { f: (T, U...) -> (), data: T })
+-- Examples taken from https://luau.org/typecheck
+```
+- Add luaparse support for if-then-else expressions, compound assignments (just using a simple workaround for now), generalized iterations as well as string interpolations.
+- Possibly switch to typescript.
+- Comment the code more.
+- Go through extensive testing to ensure the anonymization process is working correctly.
 - Support for multiple files and insure the integrity of the code is maintained. (Basically, methods defined in another script should be renamed in other files using those)
-- Basic string encryptions as well, nothing too crazy but just to make strings less readable
+- Basic string encryptions as well, nothing too crazy but just to make strings less readable.
+- If I really can be arsed to do that, update luaparse for it to be OOP and suitable for the latest ES conventions.
 
 ### Contributing
 
