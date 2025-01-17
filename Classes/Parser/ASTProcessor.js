@@ -1,10 +1,11 @@
 /* Dependencies */
-import LuaReserved from "../Roblox/LuaReserved.js";
+import LuauKeywords from "./Utils/LuauKeywords.js";
 
 /* ASTProcessor */
 export default class ASTProcessor {
-    constructor(fileName, identifiersMap) {
-        this.allIdentifiers = identifiersMap
+    constructor(fileName, identifiersMap, robloxAPI) {
+        this.allIdentifiers = identifiersMap;
+        this.RobloxAPI = robloxAPI;
 
         identifiersMap[fileName] = {};
 
@@ -12,7 +13,11 @@ export default class ASTProcessor {
         this.variableCounter = 0
     }
 
-    generateVariableName = () => {
+    /**
+     * Generates a new random identifier string in order to anonymize the original identifier.
+     * @returns {string} - A random string of 22 characters
+     */
+    generateNewIdentifier = () => {
         const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const allChars = chars + "0123456789";
         let result = chars[Math.floor(Math.random() * chars.length)];
@@ -20,6 +25,99 @@ export default class ASTProcessor {
             result += allChars[Math.floor(Math.random() * allChars.length)];
         }
         return result;
+    }
+
+
+    /**
+     *
+     * @param {*} typeAnnotation
+     * @returns
+     */
+    collectTypeAnnotations(typeAnnotation) {
+        const types = [];
+
+        function traverse(annotation) {
+            if (!annotation) return;
+            switch (annotation.type) {
+                case "TypeAnnotation":
+                    types.push(annotation.typeAnnotation);
+                    break;
+
+                case "UnionTypeAnnotation":
+                    for (const subAnnotation of annotation.types) {
+                        traverse(subAnnotation);
+                    }
+                    break;
+
+                case "NullableTypeAnnotation":
+                    traverse(annotation.typeAnnotation);
+                    break;
+
+                default:
+                    // Other annotation types can be handled here if needed
+                    break;
+            }
+        }
+
+        traverse(typeAnnotation);
+        return types;
+    }
+
+
+    /**
+     *
+     * @param {*} BaseType
+     * @param {*} Identifier
+     * @returns
+     */
+    isIdentifierInRobloxAPI(BaseType, Identifier) {
+        const types = this.collectTypeAnnotations(BaseType);
+
+        for (const type of types) {
+            const classInfo = this.RobloxAPI.getClassByName(type);
+            if (classInfo && this.RobloxAPI.getClassMemberByName(classInfo.Name, Identifier.name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Handles any Identifier node in the AST and proceeds to anonymize it using `generateNewIdentifier`.
+     * @param {*} Node - The node to process
+     * @returns - The anonymized node
+     */
+    Identifier(Node) {
+        this.map.Identifiers = this.map.Identifiers || new Map();
+
+        const name = Node.name;
+        const type = Node.typeAnnotation;
+
+        let newName = this.generateNewIdentifier();
+
+        // Special cases: starts with one or two underscores like __foo or __index
+        if (name.startsWith("__")) {
+            newName = name;
+        }
+
+        // Keywords / globals
+        if (LuauKeywords.has(name)) {
+            newName = name;
+        }
+
+        if (this.map.Identifiers.has(name)) {
+            newName = this.map.Identifiers.get(name);
+        } else {
+            this.map.Identifiers.set(name, newName);
+        }
+
+        return {
+            type: "Identifier",
+            value: newName,
+            typeAnnotation: Node.typeAnnotation,
+        }
     }
 
     LocalStatement(Node) {
@@ -90,49 +188,6 @@ export default class ASTProcessor {
             isLocal: IsLocal,
             body: newBody,
             returnType: ReturnType,
-        }
-    }
-
-    Identifier(Node) {
-        this.map.Identifiers = this.map.Identifiers || new Map();
-
-        const name = Node.name;
-        let newName = this.generateVariableName();
-
-        // Special cases: starts with one or two underscores like __foo or __index
-        if (name.startsWith("__")) {
-            newName = name;
-        }
-
-        // If it is part of the whitelist
-        // TODO: Make this so it detects if the identifier was made through a variable and isn't directly referencing the type.
-        if (LuaReserved.has(name)) {
-            newName = name;
-        }
-
-        if (this.map.Identifiers.has(name)) {
-            newName = this.map.Identifiers.get(name);
-        } else {
-            this.map.Identifiers.set(name, newName);
-        }
-
-        return {
-            type: "Identifier",
-            value: newName,
-            typeAnnotation: Node.typeAnnotation,
-        }
-    }
-
-    MemberExpression(Node) {
-        const Indexer = Node.indexer;
-        const Identifier = Node.identifier;
-        const Base = Node.base;
-
-        return {
-            type: "MemberExpression",
-            identifier: this[Identifier.type](Identifier),
-            base: this[Base.type](Base),
-            indexer: Indexer,
         }
     }
 
@@ -231,19 +286,33 @@ export default class ASTProcessor {
     }
 
     MemberExpression(Node) {
-        const Indexer = Node.indexer;
-        const Identifier = Node.identifier;
-        const Base = Node.base;
+        const { indexer: Indexer, identifier: Identifier, base: Base } = Node;
 
         const newBase = this[Base.type](Base);
-        const newIdentifier = this[Identifier.type](Identifier);
+        let newIdentifier = this[Identifier.type](Identifier);
+
+        // Process Base type annotation for Roblox API checks
+        const BaseType = Base.typeAnnotation;
+        const isBaseRobloxAPI = BaseType && BaseType !== "any" && BaseType !== "unknown";
+
+        if (isBaseRobloxAPI && this.isIdentifierInRobloxAPI(BaseType, Identifier)) {
+            newIdentifier = Identifier; // Keep it safe as it belongs to Roblox's API.
+        } else {
+            // Fallback: Check if the Identifier belongs to any Roblox API class
+            const isIdentifierPartOfRobloxAPI = this.RobloxAPI.getClassesThatGotMemberByName(Identifier.name);
+            if (isIdentifierPartOfRobloxAPI?.length > 0) {
+                const classesNames = isIdentifierPartOfRobloxAPI.join(", ");
+                console.warn(`ShadowMap> Ambiguous member expression: ${Base.name}${Indexer}${Identifier.name} - This member (${Identifier.name}) belongs to classes: ${classesNames}. It has not been anonymized.`);
+                newIdentifier = Identifier; // Keep it safe.
+            }
+        }
 
         return {
             type: "MemberExpression",
             indexer: Indexer,
             identifier: newIdentifier,
             base: newBase,
-        }
+        };
     }
 
     CallStatement(Node) {

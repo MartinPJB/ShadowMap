@@ -5,6 +5,7 @@ import luaparse from "../../Deps/luaparse/luaparse.js";
 
 import ASTProcessor from "./ASTProcessor.js";
 import LuaWriter from "./LuaWriter.js";
+import RobloxAPI from "../Roblox/RobloxAPI.js";
 
 
 /* ShadowMap */
@@ -13,6 +14,7 @@ class ShadowMap {
         this.fullMap = {};
         this.identifiersMap = {};
         this.path = filesPath;
+        this.RobloxAPI = new RobloxAPI();
     }
 
     /**
@@ -22,9 +24,9 @@ class ShadowMap {
      * @returns - Modified AST.
      */
     processLua(fileName, content) {
-        console.log(`ShadowMap> Processing ${fileName}.`);
+        console.log(`ShadowMap> Processing ${fileName}.lua`);
 
-        const astProcessor = new ASTProcessor(fileName, this.identifiersMap);
+        const astProcessor = new ASTProcessor(fileName, this.identifiersMap, this.RobloxAPI);
 
         /* Modifies the content to fit our modified luaparse */
         // Translates compbound assignments to binary expressions
@@ -61,8 +63,11 @@ class ShadowMap {
     /**
      * Processes a path of Lua files.
      */
-    processPath() {
-        const files = fs.readdirSync(this.path);
+    async processPath() {
+        // Inits Roblox's API
+        const resp = await this.RobloxAPI.init();
+
+        const files = await fs.readdirSync(this.path);
         for (const f of files) {
             const fullPath = path.join(this.path, f);
             if (fs.statSync(fullPath).isDirectory()) {
