@@ -1,6 +1,7 @@
 # Ignore
 OLD__IGNORE__BAD.js
 node_modules
-Build
+Build/*.lua
 map.json
 package-lock.json
+Input/*.lua

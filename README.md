@@ -1,6 +1,6 @@
 # ShadowMap
 
-A vulgar attempt in order to "anonymify" a luau codebase by renaming identifiers.
+A vulgar attempt in order to "anonymize" a luau codebase by renaming identifiers and keeping integrity between multiple files.
 
 ### Before usage
 
@@ -9,10 +9,7 @@ It was written in a few hours and is a very basic implementation. It's not even 
 
 ### Known issues
 
-Some variables may not be renamed correctlly, or even worse, some properties belonging to Roblox's built-in objects may be renamed, causing the target scripts to cause errors. For now, the code doesn't actively support roblox's built-in API including:
-- DataTypes
-- Classes
-- Libraries
+Some variables may not be renamed correctly, and the anonymizer still doesn't recognizes roblox's API properties and methods. If you want to keep your codebase's integrity safe, do not use this tool yet.
 
 ### Examples
 
@@ -21,57 +18,98 @@ Before anonymizing it:
 local test = {
     Property = "Test Property",
 }
-test.__index = test;
+test.__index = test
 
-local function TestFunction(name)
+local function TestFunction(name: string): string
     return "Hello, World! " .. name
 end
 
+local function AnotherTestFunction(a: number, b: number)
+    print(a + b)
+end
+
 function test:Method()
-    local Players = game:GetService("Players")
-    local Player = Players.LocalPlayer
+    local Players: Players = game:GetService("Players")
+    local Player: Player? = Players.LocalPlayer
 
     if Player then
-        local Character = Player.Character
+        local Character: Model | BasePart = Player.Character
         print(Player, Character)
+    end
+
+    for i, v in pairs(self) do
+        if i == "Property" then
+            local testDeMerde: number | BasePlayerGui = i
+            print(i, testDeMerde)
+            continue
+        end
+    end
+
+    for i = 1, 10, 1 do
+        if i == 5 then
+            break
+        end
     end
 end
 
-local PlayerName = "Cheeto"
+local PlayerName = "Roblox"
+local stuff = 1 + ((1 * 2) / 2)
+
 TestFunction(PlayerName)
+AnotherTestFunction(2, 2)
 
 return test
 ```
 
 After anonymizing it:
 ```lua
-local v0 = { v1 = "Test Property" }
-v0.__index = v0
+local In1tmqFa3Fdwm4SNLka9vq = { LxloHX8HEfQo8MW2vJeAjo = "Test Property" }
+In1tmqFa3Fdwm4SNLka9vq.__index = In1tmqFa3Fdwm4SNLka9vq
 
-local function v7(v5)
-    return "Hello, World! " .. v5
+local function BiYB4rlLbE93m1cEZOp9tT(LR8FmZu3MeC4AvCgOjblbX)
+    return ("Hello, World! " .. LR8FmZu3MeC4AvCgOjblbX)
 end
 
-function v0:v19()
-    local Players = game:GetService("Players")
-    local Player = Players.LocalPlayer
-    if Player then
-        local Character = Player.Character -- You can already see some variables aren't renamed
-        print(Player, Character) -- In this case, it's because they are associated to Roblox's built-in DataTypes (put in a primitive whitelist)
+local function CkE9IUZ7OUYmljmvg8ksRy(QOrIFyoJwcB956RI0kaVqV, qwJyj47DFQNei9U7MHVgTY)
+    print((QOrIFyoJwcB956RI0kaVqV + qwJyj47DFQNei9U7MHVgTY))
+end
+
+function In1tmqFa3Fdwm4SNLka9vq:Od3J9zHcQLJ2rblrmWQxdG()
+    local D6Vd4oNktdCIEGqWcsqZlV = DzXuIhNxH4SzYR51TalrWJ:BSgZrDaUMD1dU07gYb5K3S("Players") -- You can see game:GetService gets obfuscated -> Unwanted result.
+    local cVXwVN9nPv1quJnBC3hW4H = D6Vd4oNktdCIEGqWcsqZlV.NFC5ydqgNkdYkElzhP71YU -- You can see LocalPlayer gets obfuscated -> Unwanted result.
+    if cVXwVN9nPv1quJnBC3hW4H then
+        local y9wJkUdVnss7HXo0tsQM4E = cVXwVN9nPv1quJnBC3hW4H.y9wJkUdVnss7HXo0tsQM4E -- You can see Character gets obfuscated -> Unwanted result.
+        print(cVXwVN9nPv1quJnBC3hW4H, y9wJkUdVnss7HXo0tsQM4E)
+    end
+
+    for GMtREuFvcQOtcLOwWFCcEI, vdkl8DOGnJA788qs1JMsp8 in pairs(self) do
+        if (GMtREuFvcQOtcLOwWFCcEI == "Property") then
+            local RpyRHvXq3EbXKxVOgmBuue = GMtREuFvcQOtcLOwWFCcEI
+            print(GMtREuFvcQOtcLOwWFCcEI, RpyRHvXq3EbXKxVOgmBuue)
+            continue
+        end
+    end
+
+    for GMtREuFvcQOtcLOwWFCcEI = 1, 10, 1 do
+        if (GMtREuFvcQOtcLOwWFCcEI == 5) then
+            break
+        end
     end
 end
 
-local v20 = "Cheeto"
-v7(v20)
+local ZaunbMH1WrcApEG9QWDjbW = "Roblox"
+local tBKZjSpoBURifG0dAgJTD8 = (1 + ((1 * 2) / 2))
 
-return v0
+BiYB4rlLbE93m1cEZOp9tT(ZaunbMH1WrcApEG9QWDjbW)
+CkE9IUZ7OUYmljmvg8ksRy(2, 2)
+
+return In1tmqFa3Fdwm4SNLka9vq
 ```
 
 ### Planned
 
 - Detect and avoid anonymizing built-in functions and variables from Roblox. -> Will use the type of the variable to determine if it's a built-in or not. So make sure to explicitely declare the type of the variable if it's not a built-in. For example: `local players = game:GetService("Players")` should be `local players: Players = game:GetService("Players")`
 - Possibly switch to typescript
-- Avoid having a single huge file for all the classes
 - Comment the code
 - Go through extensive testing to ensure the anonymization process is working correctly
 - Support for multiple files and insure the integrity of the code is maintained. (Basically, methods defined in another script should be renamed in other files using those)
