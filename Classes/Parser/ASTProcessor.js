@@ -71,7 +71,7 @@ export default class ASTProcessor {
      * Checks if the local statement refers to an external file (through a require)
      * @param {*} newInit
      */
-    handleCallAssignment(newInit) {
+    handleCallAssignment(newInit, Variables) {
         newInit.some((Statement) => {
             if (Statement.type === "CallExpression") {
                 const Index = newInit.indexOf(Statement);
@@ -180,7 +180,7 @@ export default class ASTProcessor {
         for (const InitStatement of Init) {
             newInit.push(this[InitStatement.type](InitStatement));
         }
-        handleCallAssignment(newInit);
+        this.handleCallAssignment(newInit, Variables);
 
         const newVariables = [];
         for (const Variable of Variables) {
@@ -202,7 +202,7 @@ export default class ASTProcessor {
         for (const InitStatement of Init) {
             newInit.push(this[InitStatement.type](InitStatement));
         }
-        handleCallAssignment(newInit);
+        this.handleCallAssignment(newInit, Variables);
 
         const newVariables = [];
         for (const Variable of Variables) {
