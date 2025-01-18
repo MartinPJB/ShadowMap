@@ -2077,6 +2077,17 @@
                 variable = parseIdentifier();
                 // Each variable in the namelist is locally scoped.
                 if (options.scope) scopeIdentifier(variable);
+
+                // Check for type annotation.
+                if (consume(':')) {
+                    var typeAnnotation = parseTypeAnnotation();
+                    variable.typeAnnotation = typeAnnotation;
+
+                    existingIdentifiersTypes.set(variable.name, typeAnnotation);
+                } else {
+                    variable.typeAnnotation = "unknown"; // No type annotation for this variable.
+                }
+
                 variables.push(variable);
             }
             expect('in');
