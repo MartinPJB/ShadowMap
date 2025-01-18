@@ -10,6 +10,9 @@ export default class ASTProcessor {
         identifiersMap[fileName] = {};
 
         this.map = identifiersMap[fileName];
+        this.map.Identifiers = this.map.Identifiers || new Map();
+        this.map.FilesReferences = this.map.FilesReferences || new Map();
+
         this.variableCounter = 0
     }
 
@@ -65,6 +68,49 @@ export default class ASTProcessor {
 
 
     /**
+     * Checks if the local statement refers to an external file (through a require)
+     * @param {*} newInit
+     */
+    handleCallAssignment(newInit) {
+        newInit.some((Statement) => {
+            if (Statement.type === "CallExpression") {
+                const Index = newInit.indexOf(Statement);
+                const Base = Statement.base;
+                const Arguments = Statement.arguments;
+
+                if (Base.type === "Identifier" && Base.value === "require") {
+
+                    // Refers to an external file
+                    const Variable = Variables[Index];
+                    if (Variable && (Variable.type == "Identifier")) {
+                        const FilePath = Arguments[0];
+                        let File = null;
+
+                        // In case of :FindFirstChild or other function to find a child
+                        if (FilePath.type == "CallExpression") {
+                            File = FilePath.arguments[0].raw.replace(/["']|["']$/g, "");
+                        }
+
+                        // In case of a direct definition through an identifier
+                        if (FilePath.type == "MemberExpression") {
+                            File = FilePath.identifier.name
+                        }
+
+                        if (File) {
+                            this.map.FilesReferences.set(Variable.name, File);
+                        } else {
+                            if (this.map.FilesReferences.has(Variable.name)) {
+                                this.map.FilesReferences.delete(Variable.name);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    /**
      *
      * @param {*} BaseType
      * @param {*} Identifier
@@ -90,10 +136,9 @@ export default class ASTProcessor {
      * @returns - The anonymized node
      */
     Identifier(Node) {
-        this.map.Identifiers = this.map.Identifiers || new Map();
-
         const name = Node.name;
         const type = Node.typeAnnotation;
+        let refersToFile = null;
 
         let newName = this.generateNewIdentifier();
 
@@ -107,16 +152,23 @@ export default class ASTProcessor {
             newName = name;
         }
 
+        // If the identifier already has been anonymized, we will use the already anonymized name
         if (this.map.Identifiers.has(name)) {
             newName = this.map.Identifiers.get(name);
         } else {
             this.map.Identifiers.set(name, newName);
         }
 
+        // If the identifier refers to a file, we will use the file name as the new name
+        if (this.map.FilesReferences.has(name)) {
+            refersToFile = this.map.FilesReferences.get(name);
+        }
+
         return {
             type: "Identifier",
             value: newName,
             typeAnnotation: Node.typeAnnotation,
+            refersToFile: refersToFile,
         }
     }
 
@@ -124,14 +176,15 @@ export default class ASTProcessor {
         const Variables = Node.variables;
         const Init = Node.init;
 
-        const newVariables = [];
-        for (const Variable of Variables) {
-            newVariables.push(this[Variable.type](Variable));
-        }
-
         const newInit = [];
         for (const InitStatement of Init) {
             newInit.push(this[InitStatement.type](InitStatement));
+        }
+        handleCallAssignment(newInit);
+
+        const newVariables = [];
+        for (const Variable of Variables) {
+            newVariables.push(this[Variable.type](Variable));
         }
 
         return {
@@ -143,23 +196,24 @@ export default class ASTProcessor {
 
     AssignmentStatement(Node) {
         const Variables = Node.variables;
-        const Inits = Node.init;
+        const Init = Node.init;
 
-        const result = {
-            type: "AssignmentStatement",
-            variables: [],
-            init: [],
+        const newInit = [];
+        for (const InitStatement of Init) {
+            newInit.push(this[InitStatement.type](InitStatement));
         }
+        handleCallAssignment(newInit);
 
+        const newVariables = [];
         for (const Variable of Variables) {
-            result.variables.push(this[Variable.type](Variable));
+            newVariables.push(this[Variable.type](Variable));
         }
 
-        for (const InitStatement of Inits) {
-            result.init.push(this[InitStatement.type](InitStatement));
+        return {
+            type: "AssignmentStatement",
+            variables: newVariables,
+            init: newInit,
         }
-
-        return result;
     }
 
     FunctionDeclaration(Node) {
@@ -303,7 +357,12 @@ export default class ASTProcessor {
             const isIdentifierPartOfRobloxAPI = this.RobloxAPI.getClassesThatGotMemberByName(Identifier.name);
             if (isIdentifierPartOfRobloxAPI?.length > 0) {
                 const classesNames = isIdentifierPartOfRobloxAPI.join(", ");
-                console.warn(`ShadowMap> Ambiguous member expression: ${Base.name}${Indexer}${Identifier.name} - This member (${Identifier.name}) belongs to classes: ${classesNames}. It has not been anonymized.`);
+                let TargetedBase = Base;
+                while (TargetedBase.type == "MemberExpression") {
+                    TargetedBase = TargetedBase.identifier;
+                }
+
+                console.warn(`ShadowMap> Ambiguous member expression: ${TargetedBase.name}${Indexer}${Identifier.name} - This member (${Identifier.name}) belongs to classes: ${classesNames}. It has not been anonymized.`);
                 newIdentifier = Identifier; // Keep it safe.
             }
 
@@ -321,6 +380,25 @@ export default class ASTProcessor {
 
                 console.log(`ShadowMap> Preserving member expression: '${Identifier.name}' as it matches a file name.`);
                 newIdentifier = Identifier; // Keep it safe.
+            }
+
+            // Fallback: The identifier is not part of Roblox's API, but belongs to a property or a method we defined in our codebase.
+            // For example, when calling ModuleScript through a require. To keep the integrity of the codebase safe, instead of anonymizing it, we'll use the
+            // anonymized output of the file.
+            if (newBase.refersToFile) {
+                const fileItBelongsTo = this.allIdentifiers[newBase.refersToFile];
+                if (fileItBelongsTo) {
+                    if (fileItBelongsTo.Identifiers.has(Identifier.name)) {
+                        console.log(`ShadowMap> Anonymizing member expression: '${Identifier.name}' using the anonymized output of the file ("${newBase.refersToFile}") it belongs to.`);
+                        newIdentifier.value = fileItBelongsTo.Identifiers.get(Identifier.name);
+                    } else {
+                        console.log(`ShadowMap> ${Base.name}${Indexer}${Identifier.name} refers to a file "${newBase.refersToFile}" in our codebase, however the member ${Identifier.name} hasn't been found in it. It has not been anonymized.`);
+                        newIdentifier = Identifier
+                    }
+                } else {
+                    console.log(`ShadowMap> ${Base.name}${Indexer}${Identifier.name} refers to an external file "${newBase.refersToFile}" that wasn't found in the current codebase. Therefore, it has not been anonymized.`);
+                    newIdentifier = Identifier;
+                }
             }
         }
 
