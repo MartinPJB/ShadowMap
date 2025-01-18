@@ -2150,8 +2150,7 @@
 
     function parseLocalStatement(flowContext) {
         var name
-            , declToken = previousToken
-            , typeAnotation;
+            , declToken = previousToken;
 
         if (Identifier === token.type) {
             var variables = [],
@@ -2357,13 +2356,14 @@
                 }
                 expect(')');
 
-                // Type annotations are allowed after the function arguments.
-                if (consume(':')) {
-                    returnType = parseTypeAnnotation();
-                }
-
                 break;
             }
+        }
+
+        console.log("Hey");
+        // Type annotations are allowed after the function arguments.
+        if (consume(':')) {
+            returnType = parseTypeAnnotation();
         }
 
         var body = parseBlock(flowContext);
