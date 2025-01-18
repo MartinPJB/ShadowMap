@@ -4,6 +4,8 @@ export default class LuaWriter {
         this.visited = new Set();
     }
 
+
+
     write(node, indent = 0) {
         if (!node) return "";
         if (this.visited.has(node)) throw new Error("Cyclic structure detected in AST");
@@ -39,8 +41,12 @@ export default class LuaWriter {
             case "BreakStatement":
                 return `${indentStr}break`;
 
+            case "LogicalExpression":
             case "BinaryExpression":
                 return `(${this.write(node.left, indent)} ${node.operator} ${this.write(node.right, indent)})`;
+
+            case "IndexExpression":
+                return `(${this.write(node.base, indent)}[${this.write(node.index, indent)}])`;
 
             case "CallStatement":
                 return `${indentStr}${this.write(node.expression, indent)}`;
@@ -58,11 +64,7 @@ export default class LuaWriter {
                 return `${this.write(node.key, indent)} = ${this.write(node.value, indent)}`;
 
             case "IfStatement":
-                return node.clauses.map((clause, i) => this.write(clause, i === 0 ? indent : indent + 1)).join(`\n`);
-
-            case "IfClause":
-                const ifBody = node.body.map((b) => this.write(b, indent + 1)).join("\n");
-                return `${indentStr}if ${this.write(node.condition, indent)} then\n${ifBody}\n${indentStr}end`;
+                return this.writeIfStatement(node, indent);
 
             case "Identifier":
                 return node.name || node.value || "undefined";
@@ -105,5 +107,24 @@ export default class LuaWriter {
             default:
                 return `${indentStr}-- Unknown node type: ${node.type}`;
         }
+    }
+
+    writeIfStatement(node, indent) {
+        const indentStr = "    ".repeat(indent);
+        let result = "";
+
+        node.clauses.forEach((clause, index) => {
+            if (clause.type === "IfClause") {
+                const condition = this.write(clause.condition, indent);
+                const body = clause.body.map((b) => this.write(b, indent + 1)).join("\n");
+                result += `${index === 0 ? `${indentStr}if` : `${indentStr}elseif`} ${condition} then\n${body}\n`;
+            } else if (clause.type === "ElseClause") {
+                const body = clause.body.map((b) => this.write(b, indent + 1)).join("\n");
+                result += `${indentStr}else\n${body}\n`;
+            }
+        });
+
+        result += `${indentStr}end`; // Append "end" once for the whole statement.
+        return result;
     }
 }

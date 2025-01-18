@@ -2,10 +2,48 @@
 import fs from "fs";
 import path from "path";
 import luaparse from "../../Deps/luaparse/luaparse.js";
+import crypto from "crypto";
 
 import ASTProcessor from "./ASTProcessor.js";
 import LuaWriter from "./LuaWriter.js";
 import RobloxAPI from "../Roblox/RobloxAPI.js";
+
+
+/* Helper functions */
+function generateRandomBigInt(digits) {
+    const min = 10n ** (BigInt(digits) - 1n);
+    const max = 10n ** BigInt(digits) - 1n;
+
+    const randomBuffer = new Uint8Array(8); // 8 bytes = 64 bits
+    crypto.getRandomValues(randomBuffer);
+
+    let randomBigInt = 0n;
+    for (let i = 0; i < randomBuffer.length; i++) {
+        randomBigInt = (randomBigInt << 8n) | BigInt(randomBuffer[i]);
+    }
+
+    // Scale the random number to the desired range
+    const range = max - min;
+    randomBigInt = (randomBigInt % (range + 1n)) + min;
+
+    return randomBigInt;
+}
+
+
+/* Variables*/
+const Key53 = generateRandomBigInt(16);
+const Key14 = Math.floor(Math.random() * 10000);
+const inv256 = (() => {
+    const inverses = [];
+    for (let M = 0; M < 128; M++) {
+        let inv = -1;
+        do {
+            inv += 2;
+        } while ((inv * (2 * M + 1)) % 256 !== 1);
+        inverses[M] = inv;
+    }
+    return inverses;
+})();
 
 
 /* ShadowMap */
@@ -18,6 +56,26 @@ class ShadowMap {
     }
 
     /**
+     *
+     * @param {string} str
+     * @returns
+     */
+    encode(str) {
+        let K = Key53;
+        const F = 16384n + BigInt(Key14);
+        return Array.from(str)
+            .map((m) => {
+                const L = K % 274877906944n; // 2^38
+                const H = (K - L) / 274877906944n;
+                const M = Number(H % 128n);
+                const c = (BigInt(m.charCodeAt(0)) * BigInt(inv256[M]) - (H - BigInt(M)) / 128n) % 256n;
+                K = L * F + H + c + BigInt(m.charCodeAt(0));
+                return c.toString(16).padStart(2, "0");
+            })
+            .join("");
+    }
+
+    /**
      * Processes the AST of a Lua file.
      * @param {string} fileName - The name of the file to be processed.
      * @param {string} content - The content of the file to be processed.
@@ -26,6 +84,26 @@ class ShadowMap {
     processLua(fileName, content) {
         console.log(`ShadowMap> Processing ${fileName}.lua`);
 
+        const injectedFunction = `local a = string.char
+local b = tonumber
+function decode(str, Key53, Key14)
+	local K, F = Key53, 16384 + Key14
+	return (str:gsub('%x%x',
+		function(c)
+			local L = K % 274877906944
+			local H = (K - L) / 274877906944
+			local M = H % 128
+			c = b(c, 16)
+			local m = (c + (H - M) / 128) * (2*M + 1) % 256
+			K = L * F + H + c + m
+			return a(m)
+		end
+	))
+end
+`;
+
+        content = injectedFunction + content;
+
         const astProcessor = new ASTProcessor(fileName, this.identifiersMap, this.RobloxAPI);
 
         /* Modifies the content to fit our modified luaparse */
@@ -33,6 +111,12 @@ class ShadowMap {
         content = content.replace(/(\w+)\s*([\+\-\*\/%\^]=)\s*(.+)/g, (_, variable, operator, expression) => {
             const op = operator.slice(0, -1);
             return `${variable} = ${variable} ${op} ${expression}`;
+        });
+
+        // Translates strings to decode calls
+        content = content.replace(/"([^"]*)"/gm, (match, capturedString) => {
+            const encryptedString = this.encode(capturedString);
+            return `decode("${encryptedString}", ${Key53}, ${Key14})`;
         });
 
 

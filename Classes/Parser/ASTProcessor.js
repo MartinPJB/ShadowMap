@@ -237,7 +237,7 @@ export default class ASTProcessor {
         return {
             type: "FunctionDeclaration",
             type: Type,
-            identifier: this[Identifier.type](Identifier),
+            identifier: Identifier ? this[Identifier.type](Identifier) : null,
             parameters: newParameters,
             isLocal: IsLocal,
             body: newBody,
@@ -293,6 +293,14 @@ export default class ASTProcessor {
             type: "NilLiteral",
             value: "nil",
             raw: "nil",
+        }
+    }
+
+    BooleanLiteral(Node) {
+        return {
+            type: "BooleanLiteral",
+            value: Node.value,
+            raw: Node.raw,
         }
     }
 
@@ -497,6 +505,20 @@ export default class ASTProcessor {
         }
     }
 
+    ElseClause(Node) {
+        const Body = Node.body;
+
+        let newBody = [];
+        for (const Statement of Body) {
+            newBody.push(this[Statement.type](Statement));
+        }
+
+        return {
+            type: "ElseClause",
+            body: newBody,
+        }
+    }
+
     CallStatement(Node) {
         const Expression = Node.expression;
 
@@ -575,6 +597,33 @@ export default class ASTProcessor {
         return {
             type: "DoStatement",
             body: newBody,
+        }
+    }
+
+    LogicalExpression(Node) {
+        const Operator = Node.operator;
+        const Left = Node.left;
+        const Right = Node.right;
+
+        return {
+            type: "LogicalExpression",
+            operator: Operator,
+            left: this[Left.type](Left),
+            right: this[Right.type](Right),
+        }
+    }
+
+    IndexExpression(Node) {
+        const Base = Node.base;
+        const Index = Node.index;
+
+        const newBase = this[Base.type](Base);
+        const newIndex = this[Index.type](Index);
+
+        return {
+            type: "IndexExpression",
+            base: newBase,
+            index: newIndex,
         }
     }
 }
