@@ -683,7 +683,6 @@
     // If there's no token in the buffer it means we have reached <eof>.
 
     function unexpected(found) {
-        console.log(found);
         var near = tokenValue(lookahead);
         if ('undefined' !== typeof found.type) {
             var type;
