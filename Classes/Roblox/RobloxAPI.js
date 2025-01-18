@@ -4005,7 +4005,7 @@ export default class RobloxAPI {
                 const response = await request.text(); // Response data should be: version-VERSIONNUMBER
                 return resolve(response);
             } catch (error) {
-                return reject(error);
+                return reject(error.message);
             }
         });
     }
@@ -4024,7 +4024,7 @@ export default class RobloxAPI {
                 const response = await request.json();
                 return resolve(response);
             } catch (error) {
-                return reject(error);
+                return reject(error.message);
             }
         });
     }
@@ -4051,7 +4051,7 @@ export default class RobloxAPI {
 
                 return resolve(true);
             } catch (error) {
-                return reject(error);
+                return reject(error.message);
             }
         });
     }
