@@ -5,3 +5,4 @@ Build/*.lua
 map.json
 package-lock.json
 Input/*.lua
+Classes/Roblox/RobloxAPIDumps/*.json
