@@ -2360,7 +2360,6 @@
             }
         }
 
-        console.log("Hey");
         // Type annotations are allowed after the function arguments.
         if (consume(':')) {
             returnType = parseTypeAnnotation();
