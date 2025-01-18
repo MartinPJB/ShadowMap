@@ -298,11 +298,28 @@ export default class ASTProcessor {
         if (isBaseRobloxAPI && this.isIdentifierInRobloxAPI(BaseType, Identifier)) {
             newIdentifier = Identifier; // Keep it safe as it belongs to Roblox's API.
         } else {
+
             // Fallback: Check if the Identifier belongs to any Roblox API class
             const isIdentifierPartOfRobloxAPI = this.RobloxAPI.getClassesThatGotMemberByName(Identifier.name);
             if (isIdentifierPartOfRobloxAPI?.length > 0) {
                 const classesNames = isIdentifierPartOfRobloxAPI.join(", ");
                 console.warn(`ShadowMap> Ambiguous member expression: ${Base.name}${Indexer}${Identifier.name} - This member (${Identifier.name}) belongs to classes: ${classesNames}. It has not been anonymized.`);
+                newIdentifier = Identifier; // Keep it safe.
+            }
+
+            // Fallback: Check if the Identifier matches a file name in our current codebase. If it does, we're not touching it as it could likely ruin the integrity.
+            if (Object.keys(this.allIdentifiers).includes(Identifier.name)) {
+
+                /**
+                 * Warning: This logic preserves identifiers that match file names in the current codebase.
+                 * However, if the member is not a script or ModuleScript (e.g., `script.Parent.TextLabel`),
+                 * it may still be anonymized. This happens because we can't fully contextualize the entire workspace.
+                 *
+                 * To avoid potential issues with anonymization, use :FindFirstChild("Name") for children like UI elements
+                 * or other instances where ambiguity might occur. This ensures your references remain intact.
+                 */
+
+                console.log(`ShadowMap> Preserving member expression: '${Identifier.name}' as it matches a file name.`);
                 newIdentifier = Identifier; // Keep it safe.
             }
         }
