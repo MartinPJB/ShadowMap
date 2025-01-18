@@ -15,6 +15,13 @@ It was written in a few hours and is a very basic implementation. It's not even 
 - As explained later in the readme, not all type checking is done. See ["Planned"](#planned) for more information.
 - For all the JavaScript haters, yeah I used JS and not another language for that. Yeah I could've used something like C++ or Rust to do that but I couldn't be asked. So no need to come to me asking me "Why is this JS boohoo fuck JS". I needed this to be done fast and this is the language I know the most. Although I hear you, I might re-do the whole thing in another language when I'll both have time for that and motivation. For now, it's in JS, and cry about it.
 
+### Usage
+
+After some testing for my own scripts used in Roblox games, it seems to work "fine". The output code still needs a lot of corrections and tweaking regarding:
+- Obfuscated strings -> Some are not encoded correctly, which leads to errors or these to be unreadable.
+- Properties (Some properties are anonymized when they shouldn't, and vice versa. Simple example with `StatusCode` for `HttpService:RequestAsync`, etc...)
+- As stated in ["Known issues"](#known-issues), Enums and some types aren't handled correctly.
+
 ### Examples
 
 Before anonymizing it:
