@@ -1,6 +1,8 @@
 # ShadowMap
 
-A vulgar attempt in order to "anonymize" a luau codebase by renaming identifiers and keeping integrity between multiple files.
+A vulgar attempt in order to "anonymize" a luau codebase by renaming identifiers and keeping integrity between multiple files. 
+
+⚠️ **NOT MEANT FOR PRODUCTION - THIS IS AN EXPERIMENT AND IT IS HEAVILY UNOPTIMIZED AND ISN'T WORKING PROPERLY.**
 
 ### Before usage
 
@@ -11,7 +13,7 @@ It was written in a few hours and is a very basic implementation. It's not even 
 
 - Some types from Roblox's API are not handled correctly. This is because the new Roblox API Dump class fetches Classes and Enums. However it doesn't fetch the [Data Types](https://create.roblox.com/docs/reference/engine/datatypes) as it is not in the json dumped by their API. This means that some types will still be anonymized.
 - Enums implementation is yet to come. For now, there's only Class checks for Member Expressions. This means that Enums will still be anonymized.
-- Optimization problems: I know as for now the code isn't as optimized as I'd want it to be.
+- Optimization problems: I know as for now the code isn't as optimized and as clean as I'd want it to be. So yeah, this is definitely not meant for production uses.
 - As explained later in the readme, not all type checking is done. See ["Planned"](#planned) for more information.
 - For all the JavaScript haters, yeah I used JS and not another language for that. Yeah I could've used something like C++ or Rust to do that but I couldn't be asked. So no need to come to me asking me "Why is this JS boohoo fuck JS". I needed this to be done fast and this is the language I know the most. Although I hear you, I might re-do the whole thing in another language when I'll both have time for that and motivation. For now, it's in JS, and cry about it.
 
